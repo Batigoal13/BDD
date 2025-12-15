@@ -1,0 +1,90 @@
+@startuml schema
+!theme toy
+
+title Schéma Relationnel Films (3NF)
+
+' ----------------------------------------------------
+' Définition des styles (optionnel mais recommandé)
+' ----------------------------------------------------
+skinparam class {
+    BorderColor DarkBlue
+    BackgroundColor White
+    ArrowColor #666666
+}
+
+' ----------------------------------------------------
+' TABLES CENTRALES
+' ----------------------------------------------------
+
+class Titles {
+  + {field} tconst : string <<PK>>
+  --
+  + titleType : string
+  + primaryTitle : string
+  + startYear : int
+  + runtimeMinutes : int
+}
+
+class Persons {
+  + {field} nconst : string <<PK>>
+  --
+  + primaryName : string
+  + birthYear : int
+  + deathYear : int
+}
+
+class Ratings {
+  + {field} tconst : string <<PK, FK>>
+  --
+  + averageRating : float
+  + numVotes : int
+}
+
+' ----------------------------------------------------
+' TABLES DE DOMAINES ET DE JOINTURE
+' ----------------------------------------------------
+
+class Professions {
+  + {field} professionName : string <<PK>>
+}
+
+class Principals {
+  + {field} tconst : string <<PK, FK>>
+  + {field} nconst : string <<PK, FK>>
+  --
+  + ordering : int
+  + category : string  ' (director, actor, writer, etc.)
+}
+
+class Title_Genres {
+  + {field} tconst : string <<PK, FK>>
+  + {field} genre : string <<PK>>
+}
+
+class Person_Professions {
+  + {field} nconst : string <<PK, FK>>
+  + {field} professionName : string <<PK, FK>>
+}
+
+
+' ----------------------------------------------------
+' RELATIONS (Cardinalités)
+' ----------------------------------------------------
+
+' Titles et Ratings : 1 à 1 (un titre a une seule note)
+Titles "1" -- "1" Ratings : a une note
+
+' Titles et Principals : 1 à plusieurs (chaque titre a plusieurs principaux)
+Titles "1" *-- "0..*" Principals : a un principal
+
+' Persons et Principals : 1 à plusieurs (chaque personne est principal dans plusieurs titres)
+Persons "1" *-- "0..*" Principals : est principal pour
+
+' Titles et Genres (N-à-N) : géré par Title_Genres
+Titles "1" *-- "0..*" Title_Genres : est classé
+
+' Persons et Professions (N-à-N) : géré par Person_Professions
+Persons "1" *-- "0..*" Person_Professions : exerce
+Professions "1" *-- "0..*" Person_Professions : est exercée
+
+@enduml

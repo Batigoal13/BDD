@@ -1,0 +1,11 @@
+# Ignorer les fichiers systèmes
+.DS_Store
+Thumbs.db
+
+# Ignorer les gros fichiers de base de données
+*.sql
+*.sqlite
+*.db
+*.dump
+*.zip
+node_modules/
