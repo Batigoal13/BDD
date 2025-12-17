@@ -9,3 +9,6 @@ Thumbs.db
 *.dump
 *.zip
 node_modules/
+data/mongo
+data/sqlite
+data/csv
