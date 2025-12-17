@@ -12,3 +12,5 @@ node_modules/
 data/mongo
 data/sqlite
 data/csv
+mongodb-macos-x86_64-7.0.5
+mongodb-macos-x86_64-7.0.5.tgz
