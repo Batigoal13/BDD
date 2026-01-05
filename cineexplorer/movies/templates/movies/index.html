@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineExplorer - Statistiques</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; margin-bottom: 30px; }
+        h2 { color: #555; margin: 20px 0 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card h3 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { font-weight: bold; color: #555; }
+        .stat-value { color: #3498db; }
+        .replica-member { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+        .replica-member.PRIMARY { background: #d4edda; border-left: 4px solid #28a745; }
+        .replica-member.SECONDARY { background: #d1ecf1; border-left: 4px solid #17a2b8; }
+        .replica-member.UNKNOWN { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .member-name { font-weight: bold; }
+        .member-state { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: white; }
+        .member-state.PRIMARY { background: #28a745; }
+        .member-state.SECONDARY { background: #17a2b8; }
+        .collections { margin-top: 10px; }
+        .collection-item { padding: 5px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 CineExplorer - Dashboard</h1>
+        
+        <div class="stats-grid">
+            <!-- SQLite Stats -->
+            <div class="card">
+                <h3>📊 SQLite Statistics</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Films:</span>
+                    <span class="stat-value">{{ sqlite_stats.movie_count }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Personnes:</span>
+                    <span class="stat-value">{{ sqlite_stats.person_count }}</span>
+                </div>
+                {% if sqlite_stats.rating_stats %}
+                <div class="stat-row">
+                    <span class="stat-label">Ratings:</span>
+                    <span class="stat-value">{{ sqlite_stats.rating_stats.count }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Rating moyen:</span>
+                    <span class="stat-value">{{ sqlite_stats.rating_stats.avg_rating|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- MongoDB Stats -->
+            <div class="card">
+                <h3>🍃 MongoDB Statistics</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Films:</span>
+                    <span class="stat-value">{{ mongo_stats.movie_count }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Personnes:</span>
+                    <span class="stat-value">{{ mongo_stats.person_count }}</span>
+                </div>
+                <div class="collections">
+                    <h4 style="margin: 10px 0; color: #666;">Collections:</h4>
+                    {% for coll_name, count in mongo_stats.collections.items %}
+                    <div class="collection-item">
+                        <span>{{ coll_name }}</span>
+                        <span style="color: #3498db;">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Replica Set Status -->
+            <div class="card">
+                <h3>🔄 Replica Set Status</h3>
+                {% if replica_status.ok %}
+                <div class="stat-row">
+                    <span class="stat-label">Set Name:</span>
+                    <span class="stat-value">{{ replica_status.set }}</span>
+                </div>
+                <div style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 10px; color: #666;">Membres:</h4>
+                    {% for member in replica_status.members %}
+                    <div class="replica-member {{ member.stateStr }}">
+                        <div class="member-name">{{ member.name }}</div>
+                        <div style="margin-top: 5px;">
+                            <span class="member-state {{ member.stateStr }}">{{ member.stateStr }}</span>
+                            <span style="margin-left: 10px; color: #666;">
+                                Health: {{ member.health }} | Uptime: {{ member.uptime }}s
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px;">
+                    ❌ Erreur: {{ replica_status.error }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔍 Actions</h3>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <a href="/search/?q=star&source=sqlite" style="padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 4px;">Test SQLite Search</a>
+                <a href="/search/?q=star&source=mongo" style="padding: 10px 20px; background: #27ae60; color: white; text-decoration: none; border-radius: 4px;">Test MongoDB Search</a>
+                <a href="/replica-status/" style="padding: 10px 20px; background: #e67e22; color: white; text-decoration: none; border-radius: 4px;">Replica Status JSON</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
