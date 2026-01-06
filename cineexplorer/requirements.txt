@@ -1,0 +1,52 @@
+# CineExplorer - IMDB Database Explorer
+# Python 3.12+
+# Installation: pip install -r requirements.txt
+
+# ============================================
+# Framework Web
+# ============================================
+Django==6.0
+
+# ============================================
+# Base de données
+# ============================================
+# Driver MongoDB officiel
+pymongo==4.15.5
+
+# ============================================
+# Utilitaires
+# ============================================
+# Gestion des variables d'environnement
+python-dotenv==1.0.0
+
+# Parsing et validation de données
+python-dateutil==2.8.2
+
+# ============================================
+# Développement et Tests
+# ============================================
+# Code formatting
+autopep8==2.0.4
+
+# Linting
+pylint==3.0.3
+
+# Tests
+pytest==7.4.3
+pytest-django==4.7.0
+
+# ============================================
+# Production (optionnel)
+# ============================================
+# Serveur WSGI
+gunicorn==21.2.0
+
+# Gestion des processus
+supervisor==4.2.5
+
+# ============================================
+# Notes
+# ============================================
+# SQLite3 est inclus dans Python (pas de dépendance externe)
+# MongoDB 7.0+ doit être installé séparément
+# Bootstrap 5, Chart.js, Font Awesome sont chargés via CDN
