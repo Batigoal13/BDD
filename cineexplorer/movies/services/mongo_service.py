@@ -85,6 +85,104 @@ def get_movie_with_rating(mid):
     return results[0] if results else None
 
 
+def get_movie_detail(movie_id):
+    """
+    Retourne tous les détails d'un film depuis les collections normalisées MongoDB.
+    Les données sont stockées dans les fichiers WiredTiger (.wt).
+    """
+    try:
+        db = get_database()
+        
+        # 1. Film de base depuis Movies_normalized
+        movie = db.Movies_normalized.find_one({"MID": movie_id})
+        if not movie:
+            return None
+        
+        # 2. Note depuis Ratings_normalized
+        rating = db.Ratings_normalized.find_one({"MID": movie_id})
+        
+        # 3. Genres depuis Genres_normalized
+        genres = list(db.Genres_normalized.find({"MID": movie_id}))
+        genres_list = [g.get('genre') for g in genres if g.get('genre')]
+        
+        # 4. Réalisateurs depuis Directors_normalized + Persons_normalized
+        directors = list(db.Directors_normalized.find({"MID": movie_id}))
+        formatted_directors = []
+        for d in directors:
+            pid = d.get("('pid',)") or d.get("PID")
+            if pid:
+                person = db.Persons_normalized.find_one({"('pid',)": pid})
+                if person:
+                    formatted_directors.append({
+                        'PID': pid,
+                        'name': person.get('primaryName', 'Unknown')
+                    })
+        
+        # 5. Casting depuis Principals_normalized + Persons_normalized
+        principals = list(db.Principals_normalized.find({
+            "MID": movie_id,
+            "category": {"$in": ["actor", "actress"]}
+        }).sort("ordering", 1).limit(30))
+        
+        formatted_cast = []
+        for p in principals:
+            pid = p.get("('pid',)") or p.get("PID")
+            if pid:
+                person = db.Persons_normalized.find_one({"('pid',)": pid})
+                if person:
+                    # Chercher les personnages
+                    characters = list(db.Characters_normalized.find({"MID": movie_id, "('pid',)": pid}))
+                    char_names = [c.get('name') for c in characters if c.get('name')]
+                    
+                    formatted_cast.append({
+                        'PID': pid,
+                        'name': person.get('primaryName', 'Unknown'),
+                        'category': p.get('category', 'actor'),
+                        'characters': char_names,
+                        'ordering': p.get('ordering', 999)
+                    })
+        
+        # 6. Scénaristes depuis Writers_normalized + Persons_normalized
+        writers = list(db.Writers_normalized.find({"MID": movie_id}))
+        formatted_writers = []
+        for w in writers[:10]:
+            pid = w.get("('pid',)") or w.get("PID")
+            if pid:
+                person = db.Persons_normalized.find_one({"('pid',)": pid})
+                if person:
+                    formatted_writers.append({
+                        'PID': pid,
+                        'name': person.get('primaryName', 'Unknown')
+                    })
+        
+        # 7. Titres alternatifs depuis Titles_normalized
+        alt_titles = list(db.Titles_normalized.find({"MID": movie_id}).limit(10))
+        
+        # Construire le résultat
+        return {
+            'MID': movie_id,
+            'primaryTitle': movie.get('primaryTitle', 'Unknown'),
+            'originalTitle': movie.get('originalTitle'),
+            'startYear': movie.get('startYear'),
+            'endYear': movie.get('endYear'),
+            'titletype': movie.get('titleType'),
+            'runtime': movie.get('runtimeMinutes'),
+            'genres': genres_list,
+            'rating': rating.get('averageRating') if rating else 0,
+            'votes': rating.get('numVotes') if rating else 0,
+            'cast': sorted(formatted_cast, key=lambda x: x.get('ordering', 999)),
+            'directors': formatted_directors,
+            'writers': formatted_writers,
+            'producers': [],
+            'titles': alt_titles
+        }
+    except Exception as e:
+        print(f"Erreur dans get_movie_detail: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def get_replica_status():
     """Retourne le statut du replica set."""
     try:

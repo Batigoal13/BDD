@@ -1,0 +1,229 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}{{ movie.primaryTitle }} - CineExplorer{% endblock %}
+
+{% block content %}
+<div class="container mb-5">
+    {% if movie %}
+    <!-- Film Hero Section -->
+    <div class="row mb-5 mt-4">
+        <div class="col-md-3">
+            <div class="movie-poster movie-detail-poster">
+                <i class="fas fa-film"></i>
+                <div class="mt-3">
+                    <div class="rating-badge" style="font-size: 24px;">
+                        ⭐ {{ movie.rating|floatformat:1 }}/10
+                    </div>
+                    <p class="text-muted mt-2">{{ movie.votes }} évaluations</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <h1>{{ movie.primaryTitle }}</h1>
+            
+            <div class="mb-3">
+                <span class="badge bg-primary">{{ movie.startYear }}</span>
+                <span class="badge bg-secondary">{{ movie.titletype|upper }}</span>
+                {% if movie.runtime %}
+                <span class="badge bg-info">{{ movie.runtime }} min</span>
+                {% endif %}
+            </div>
+            
+            <!-- Genres -->
+            <div class="mb-3">
+                <strong>Genres:</strong>
+                {% for genre in movie.genres %}
+                <a href="{% url 'movies:movies_list' %}?genre={{ genre }}" class="badge bg-warning text-dark">
+                    {{ genre }}
+                </a>
+                {% endfor %}
+            </div>
+            
+            <!-- Synopsis -->
+            {% if movie.plot %}
+            <div class="mb-4">
+                <h5>Synopsis</h5>
+                <p>{{ movie.plot }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Info -->
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <strong>ID du film:</strong> {{ movie.MID }}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <strong>Année:</strong> {{ movie.startYear }}
+                </div>
+            </div>
+            
+            <a href="{% url 'movies:movies_list' %}" class="btn btn-secondary mt-3">
+                <i class="fas fa-arrow-left"></i> Retour au catalogue
+            </a>
+        </div>
+    </div>
+    
+    <hr class="my-5">
+    
+    <!-- Cast Section -->
+    {% if movie.cast %}
+    <div class="mb-5">
+        <h3><i class="fas fa-users"></i> Casting ({{ movie.cast|length }})</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Acteur/Actrice</th>
+                        <th>Personnage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for actor in movie.cast %}
+                    <tr>
+                        <td>
+                            <strong>{{ actor.name }}</strong>
+                        </td>
+                        <td>
+                            {% if actor.characters %}
+                                {% for char in actor.characters %}
+                                    <span class="badge bg-light text-dark">{{ char }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Crew Section -->
+    <div class="row">
+        <!-- Directors -->
+        {% if movie.directors %}
+        <div class="col-md-6 mb-5">
+            <h5><i class="fas fa-clapperboard"></i> Réalisateur(s)</h5>
+            <ul class="list-group">
+                {% for director in movie.directors %}
+                <li class="list-group-item">
+                    <strong>{{ director.name }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Writers -->
+        {% if movie.writers %}
+        <div class="col-md-6 mb-5">
+            <h5><i class="fas fa-pen"></i> Scénariste(s)</h5>
+            <ul class="list-group">
+                {% for writer in movie.writers %}
+                <li class="list-group-item">
+                    <strong>{{ writer.name }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if movie.producers %}
+    <div class="mb-5">
+        <h5><i class="fas fa-briefcase"></i> Producteur(s)</h5>
+        <ul class="list-group">
+            {% for producer in movie.producers %}
+            <li class="list-group-item">
+                <strong>{{ producer.name }}</strong>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Titres Alternatifs par Région -->
+    {% if movie.titles %}
+    <div class="mb-5">
+        <h3><i class="fas fa-globe"></i> Titres Internationaux ({{ movie.titles|length }})</h3>
+        <p class="text-muted">Ce film est connu sous différents titres selon les régions du monde.</p>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 15%;">Région</th>
+                        <th style="width: 85%;">Titre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for title in movie.titles %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-primary">
+                                {{ title.region|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>{{ title.title }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <hr class="my-5">
+    
+    <!-- Similar Movies Section -->
+    {% if similar_movies %}
+    <div class="mb-5">
+        <h3><i class="fas fa-film"></i> Films Similaires</h3>
+        <div class="row g-4">
+            {% for similar in similar_movies %}
+            <div class="col-md-4">
+                <div class="card movie-card h-100">
+                    <div class="movie-poster"><i class="fas fa-film"></i></div>
+                    <div class="card-body">
+                        <h6>{{ similar.primaryTitle }}</h6>
+                        <div class="rating-badge">{{ similar.rating|floatformat:1 }}/10</div>
+                        <p class="text-muted small">{{ similar.startYear }}</p>
+                        <a href="{% url 'movies:movie_detail' similar.MID %}" class="btn btn-sm btn-primary mt-3">
+                            Voir les détails
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Film Not Found -->
+    <div class="alert alert-danger mt-5">
+        <h4>Film non trouvé</h4>
+        <p>Le film que vous recherchez n'existe pas dans la base de données.</p>
+        <a href="{% url 'movies:movies_list' %}" class="btn btn-primary">
+            Retour au catalogue
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .movie-detail-poster {
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}Films - CineExplorer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <h1 class="mb-4">Catalogue des Films</h1>
+    <p class="text-muted">Total : {{ total_count }} films</p>
+    
+    <div class="row">
+        <!-- Filters Panel -->
+        <div class="col-lg-3">
+            <div class="filter-panel position-sticky" style="top: 80px;">
+                <h5>Filtres</h5>
+                <form method="get" class="mt-4">
+                    <!-- Genre Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Genre</label>
+                        <select name="genre" class="form-select form-select-sm">
+                            <option value="">Tous les genres</option>
+                            {% for g in genres %}
+                            <option value="{{ g }}" {% if g == current_genre %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Year Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Année</label>
+                        <div class="row g-2">
+                            <div class="col">
+                                <input type="number" name="year_min" class="form-control form-control-sm" placeholder="De" value="{{ current_year_min }}">
+                            </div>
+                            <div class="col">
+                                <input type="number" name="year_max" class="form-control form-control-sm" placeholder="À" value="{{ current_year_max }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rating Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Note minimale</label>
+                        <input type="range" name="rating_min" class="form-range" min="0" max="10" step="0.5" value="{{ current_rating_min }}">
+                        <small class="text-muted">≥ {{ current_rating_min }}/10</small>
+                    </div>
+                    
+                    <!-- Sort -->
+                    <div class="mb-3">
+                        <label class="form-label">Tri</label>
+                        <select name="sort" class="form-select form-select-sm">
+                            <option value="title" {% if current_sort == "title" %}selected{% endif %}>Titre (A-Z)</option>
+                            <option value="year" {% if current_sort == "year" %}selected{% endif %}>Année (récent)</option>
+                            <option value="rating" {% if current_sort == "rating" %}selected{% endif %}>Note (élevé)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- View Type -->
+                    <div class="mb-3">
+                        <label class="form-label">Affichage</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="view" id="grid-view" value="grid" {% if view_type == "grid" %}checked{% endif %}>
+                            <label class="btn btn-outline-primary btn-sm" for="grid-view">
+                                <i class="fas fa-th"></i> Grille
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="view" id="list-view" value="list" {% if view_type == "list" %}checked{% endif %}>
+                            <label class="btn btn-outline-primary btn-sm" for="list-view">
+                                <i class="fas fa-list"></i> Liste
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Appliquer
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Movies Grid -->
+        <div class="col-lg-9">
+            {% if movies %}
+            <div class="row g-4 {% if view_type == 'list' %}flex-column{% endif %}">
+                {% for movie in movies %}
+                <div class="col-12 {% if view_type == 'grid' %}col-md-6 col-lg-4{% endif %}">
+                    <div class="card movie-card">
+                        <div class="movie-poster">
+                            <i class="fas fa-film"></i>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="movie-title">{{ movie.primaryTitle }}</h6>
+                            <p class="card-text text-muted small">{{ movie.startYear }}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="rating-badge">⭐ {{ movie.averageRating|floatformat:1 }}/10</span>
+                                <small class="text-muted">{{ movie.numVotes }} votes</small>
+                            </div>
+                            <a href="{% url 'movies:movie_detail' movie.MID %}" class="btn btn-sm btn-primary w-100">
+                                Détails
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            <nav class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if movies.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{{ request.GET.urlencode|add:'&' }}">Première</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ movies.previous_page_number }}{{ request.GET.urlencode|add:'&' }}">Précédent</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">Page {{ movies.number }} sur {{ movies.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if movies.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ movies.next_page_number }}{{ request.GET.urlencode|add:'&' }}">Suivant</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ movies.paginator.num_pages }}{{ request.GET.urlencode|add:'&' }}">Dernière</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i> Aucun film ne correspond à votre recherche.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+Script RAPIDE pour créer les documents structurés MongoDB
+Skip des index pour aller plus vite - les index seront créés après
+"""
 import time
 import sys
 from pymongo import MongoClient, ASCENDING
@@ -19,72 +24,17 @@ COLL_PERSONS = "Persons"
 COLL_CHARACTERS = "Characters"
 
 # Cible
-TARGET_COLL = "movies_complete_ALL" # J'ai renommé la collection pour ne pas écraser l'autre test
-BATCH_SIZE = 1000
+TARGET_COLL = "movies_complete_ALL"
+BATCH_SIZE = 500
 
-def ensure_indexes(db):
-    """
-    Indexation critique pour la performance.
-    """
-    print("🛠 Vérification des index...")
-    
-    # Index principaux
-    print("   📍 Création index sur Movies.MID...", end='', flush=True)
-    db[COLL_MOVIES].create_index([("MID", ASCENDING)])
-    print(" ✅")
-    
-    print("   📍 Création index sur Ratings.MID...", end='', flush=True)
-    db[COLL_RATINGS].create_index("MID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Genres.MID...", end='', flush=True)
-    db[COLL_GENRES].create_index("MID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Titles.MID...", end='', flush=True)
-    db[COLL_TITLES].create_index("MID")
-    print(" ✅")
-    
-    # Tables de liaison
-    print("   📍 Création index sur Directors.MID...", end='', flush=True)
-    db[COLL_DIRECTORS].create_index("MID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Directors.PID...", end='', flush=True)
-    db[COLL_DIRECTORS].create_index("PID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Writers.MID...", end='', flush=True)
-    db[COLL_WRITERS].create_index("MID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Writers.PID...", end='', flush=True)
-    db[COLL_WRITERS].create_index("PID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Principals.MID (⏳ peut prendre 1-2 min)...", end='', flush=True)
-    db[COLL_PRINCIPALS].create_index("MID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Principals.PID (⏳ peut prendre 1-2 min)...", end='', flush=True)
-    db[COLL_PRINCIPALS].create_index("PID")
-    print(" ✅")
-    
-    # Personnes
-    print("   📍 Création index sur Persons.PID...", end='', flush=True)
-    db[COLL_PERSONS].create_index("PID")
-    print(" ✅")
-    
-    print("   📍 Création index sur Characters (⏳ peut prendre 1-2 min)...", end='', flush=True)
-    db[COLL_CHARACTERS].create_index([("MID", ASCENDING), ("PID", ASCENDING)])
-    print(" ✅")
-    
-    print("✅ Tous les index sont opérationnels.")
+def skip_indexes(db):
+    """Skip la création d'index pour aller plus vite"""
+    print("⏭️  Skip de la création d'index")
+    print("   ℹ️  Les index seront créés après la migration")
 
 def get_pipeline(batch_mids: List[str]) -> List[dict]:
     """Pipeline d'agrégation SANS filtre de type."""
     return [
-        # 1. FILTRE : Sélection par IDs uniquement (TOUT TYPE CONFONDU)
         {"$match": {
             "MID": {"$in": batch_mids}
         }},
@@ -113,7 +63,7 @@ def get_pipeline(batch_mids: List[str]) -> List[dict]:
             "as": "titles_list"
         }},
 
-        # 5. JOINTURE DIRECTORS
+        # 5. JOINTURE DIRECTORS (optimisée avec pipeline)
         {"$lookup": {
             "from": COLL_DIRECTORS,
             "let": {"mid": "$MID"},
@@ -158,6 +108,7 @@ def get_pipeline(batch_mids: List[str]) -> List[dict]:
                     {"$eq": ["$MID", "$$mid"]},
                     {"$in": ["$category", ["actor", "actress"]]}
                 ]}}},
+                {"$limit": 30},  # Limiter pour performance
                 {"$lookup": {
                     "from": COLL_PERSONS,
                     "localField": "PID",
@@ -191,11 +142,11 @@ def get_pipeline(batch_mids: List[str]) -> List[dict]:
         # 8. PROJECTION FINALE
         {"$project": {
             "_id": "$MID",
-            "type": "$titletype",  # Ajout du type pour pouvoir filtrer plus tard si besoin
+            "type": "$titletype",
             "title": "$primaryTitle",
             "original_title": "$originalTitle",
             "year": "$startYear",
-            "endYear": "$endYear", # Utile pour les séries
+            "endYear": "$endYear",
             "runtime": "$runtimeMinutes",
             "genres": "$genres_list.genre",
             "rating": {
@@ -231,38 +182,43 @@ def print_progress(current, total, start_time):
     avg_speed = current / elapsed if elapsed > 0 else 0
     remaining = (total - current) / avg_speed if avg_speed > 0 else 0
     
-    bar_length = 30
+    bar_length = 40
     filled_length = int(bar_length * current // total)
     bar = '█' * filled_length + '-' * (bar_length - filled_length)
     
-    sys.stdout.write(f'\rProgress: |{bar}| {percent:.1f}% ({current}/{total}) - ⏳ Reste env. {remaining/60:.1f} min')
+    speed_str = f"{avg_speed:.0f} docs/sec"
+    remaining_str = f"{remaining/60:.1f} min" if remaining > 60 else f"{remaining:.0f} sec"
+    
+    sys.stdout.write(f'\r|{bar}| {percent:5.1f}% ({current:6d}/{total:6d}) | ⏱️  {speed_str} | ⏳ {remaining_str}')
     sys.stdout.flush()
 
-def migrate_embedded():
+def migrate_embedded_fast():
     client = MongoClient(MONGO_URI)
     db = client[DB_NAME]
     
-    print(f"🏗️  Démarrage de la MIGRATION COMPLÈTE (TOUT INCLUS)")
+    print(f"\n🏗️  MIGRATION RAPIDE - Documents structurés MongoDB")
     print(f"    Cible : {TARGET_COLL}")
+    print(f"    Mode : RAPIDE (skip des index)")
 
-    ensure_indexes(db)
+    skip_indexes(db)
 
-    print(f"🧹 Nettoyage de la collection cible {TARGET_COLL}...")
+    print(f"\n🧹 Nettoyage de la collection cible {TARGET_COLL}...")
     db[TARGET_COLL].drop()
 
-    # 1. Compte total (estimé pour la rapidité)
+    # 1. Compte total
     print("📊 Estimation du volume total...")
     total_docs = db[COLL_MOVIES].estimated_document_count()
-    print(f"📋 Documents à traiter : {total_docs}")
+    print(f"📋 Documents à traiter : {total_docs:,}")
     
-    # 2. Curseur sur TOUT (pas de filtre)
-    # On trie par MID pour une lecture séquentielle potentiellement plus stable, mais optionnel
+    # 2. Curseur sur tout
     cursor = db[COLL_MOVIES].find({}, {"MID": 1}) 
     
     start_time = time.time()
     processed_count = 0
+    batch_num = 0
 
     for batch_mids in batch_generator(cursor, BATCH_SIZE):
+        batch_num += 1
         pipeline = get_pipeline(batch_mids)
         
         try:
@@ -275,11 +231,28 @@ def migrate_embedded():
             print_progress(processed_count, total_docs, start_time)
             
         except Exception as e:
-            print(f"\n⚠️ Erreur batch : {e}")
+            print(f"\n⚠️  Erreur batch {batch_num}: {e}")
+            continue
 
     duration = time.time() - start_time
-    print(f"\n\n✅ Migration terminée en {duration:.2f} secondes.")
-    print(f"📊 Total documents : {db[TARGET_COLL].count_documents({})}")
+    total_in_target = db[TARGET_COLL].count_documents({})
+    
+    print(f"\n\n✅ Migration terminée!")
+    print(f"   ⏱️  Durée: {duration/60:.1f} minutes")
+    print(f"   📊 Documents créés: {total_in_target:,}/{total_docs:,}")
+    
+    if total_in_target > 0:
+        print(f"\n🔍 Création des index pour performance...")
+        print(f"   📍 Index sur _id (PRIMARY)...", end='', flush=True)
+        db[TARGET_COLL].create_index([("_id", ASCENDING)])
+        print(" ✅")
+        
+        print(f"   📍 Index sur type...", end='', flush=True)
+        db[TARGET_COLL].create_index([("type", ASCENDING)])
+        print(" ✅")
+        
+        print(f"\n✅ Les documents structurés sont prêts!")
+        print(f"   Accédez-les via: db.{TARGET_COLL}.find_one({{'_id': 'tt1234567'}})")
 
 if __name__ == "__main__":
-    migrate_embedded()
+    migrate_embedded_fast()

@@ -1,0 +1,198 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}Statistiques - CineExplorer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-5">Statistiques et Graphiques</h1>
+    
+    <div class="row">
+        <!-- Films by Genre -->
+        <div class="col-lg-6 mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Films par Genre (Top 10)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="genreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Films by Decade -->
+        <div class="col-lg-6 mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Films par Décennie</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="decadeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Rating Distribution -->
+        <div class="col-lg-6 mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Distribution des Évaluations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="ratingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Top Actors -->
+        <div class="col-lg-6 mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Top 10 Acteurs Prolifiques</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Films</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for actor in top_actors %}
+                                <tr>
+                                    <td>{{ actor.primaryName }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ actor.film_count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Parse data from Django context
+    const genreData = {{ movies_by_genre|safe }};
+    const decadeData = {{ movies_by_decade|safe }};
+    const ratingData = {{ rating_distribution|safe }};
+    
+    // Genre Chart (Bar Chart)
+    const genreCtx = document.getElementById('genreChart').getContext('2d');
+    new Chart(genreCtx, {
+        type: 'bar',
+        data: {
+            labels: genreData.map(d => d.genre),
+            datasets: [{
+                label: 'Nombre de films',
+                data: genreData.map(d => d.count),
+                backgroundColor: '#f59e0b',
+                borderColor: '#d97706',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+    
+    // Decade Chart (Line Chart)
+    const decadeCtx = document.getElementById('decadeChart').getContext('2d');
+    new Chart(decadeCtx, {
+        type: 'line',
+        data: {
+            labels: decadeData.map(d => d.decade),
+            datasets: [{
+                label: 'Films par décennie',
+                data: decadeData.map(d => d.count),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#1e40af',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+    
+    // Rating Distribution Chart (Bar Chart)
+    const ratingCtx = document.getElementById('ratingChart').getContext('2d');
+    new Chart(ratingCtx, {
+        type: 'bar',
+        data: {
+            labels: ratingData.map(d => d.rating + '/10'),
+            datasets: [{
+                label: 'Nombre de films',
+                data: ratingData.map(d => d.count),
+                backgroundColor: '#ef4444',
+                borderColor: '#dc2626',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

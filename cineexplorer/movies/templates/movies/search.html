@@ -1,0 +1,175 @@
+{% extends 'movies/base.html' %}
+{% load movie_extras %}
+
+{% block title %}Résultats de recherche - CineExplorer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Search Header -->
+    <div class="mb-5">
+        <h1 class="mb-3">Résultats de recherche</h1>
+        <p class="text-muted">Pour: <strong>"{{ results.query }}"</strong></p>
+        
+        <!-- Search Filter -->
+        <form method="get" class="mb-4">
+            <div class="btn-group" role="group">
+                <input type="hidden" name="q" value="{{ results.query }}">
+                
+                <input type="radio" class="btn-check" name="type" id="all" value="all" {% if search_type == "all" %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="all">Tous</label>
+                
+                <input type="radio" class="btn-check" name="type" id="movies" value="movies" {% if search_type == "movies" %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="movies">Films</label>
+                
+                <input type="radio" class="btn-check" name="type" id="people" value="people" {% if search_type == "people" %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="people">Personnes</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+        </form>
+    </div>
+    
+    {% if has_results %}
+    <div class="row">
+        <!-- Films Results -->
+        {% if results.movies %}
+        <div class="col-12 mb-5">
+            <h2 class="mb-3">Films ({{ results.movies|length }})</h2>
+            <div class="row g-4">
+                {% for movie in results.movies %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card movie-card">
+                        <div class="movie-poster">
+                            <i class="fas fa-film"></i>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="movie-title">{{ movie.primaryTitle }}</h6>
+                            <p class="card-text text-muted small">{{ movie.startYear }}</p>
+                            <a href="{% url 'movies:movie_detail' movie.MID %}" class="btn btn-sm btn-primary w-100">
+                                Voir les détails
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- People Results -->
+        {% if results.people %}
+        <div class="col-12">
+            <h2 class="mb-3">Personnes ({{ results.people|length }})</h2>
+            {% for person in results.people %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-user-circle" style="font-size: 80px; color: var(--primary-color);"></i>
+                                <h5 class="mt-3">{{ person.primaryName }}</h5>
+                                <p class="text-muted small">
+                                    {% if person.birthYear %}{{ person.birthYear }}{% endif %}
+                                    {% if person.deathYear %}–{{ person.deathYear }}{% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            {% if results.movies_by_person|get_item:person.PID %}
+                                {% with movies=results.movies_by_person|get_item:person.PID %}
+                                    <!-- Calculer les compteurs par rôle -->
+                                    {% with directors=movies|dictsort:"role"|slice:":50" %}
+                                        {% with director_count=0 writer_count=0 actor_count=0 %}
+                                            <!-- Compter chaque rôle -->
+                                            {% for movie in movies %}
+                                                {% if movie.role == 'director' %}
+                                                    {% with director_count=director_count|add:1 %}{% endwith %}
+                                                {% elif movie.role == 'writer' %}
+                                                    {% with writer_count=writer_count|add:1 %}{% endwith %}
+                                                {% elif movie.role == 'actor' %}
+                                                    {% with actor_count=actor_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            <h6 class="mb-3">
+                                                Filmographie ({{ movies|length }} films)
+                                                <span class="ms-2">
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-video"></i> Réalisateur
+                                                    </span>
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-pen"></i> Scénariste
+                                                    </span>
+                                                    <span class="badge bg-info">
+                                                        <i class="fas fa-user"></i> Acteur
+                                                    </span>
+                                                </span>
+                                            </h6>
+                                            
+                                            <div class="row g-3">
+                                                {% for movie in movies %}
+                                                <div class="col-md-6 col-lg-4">
+                                                    <div class="card h-100 border-start border-3 
+                                                        {% if movie.role == 'director' %}border-danger
+                                                        {% elif movie.role == 'writer' %}border-warning
+                                                        {% elif movie.role == 'actor' %}border-info
+                                                        {% else %}border-secondary{% endif %}">
+                                                        <div class="card-body p-2">
+                                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                                <h6 class="mb-0" style="font-size: 0.85rem;">
+                                                                    <a href="{% url 'movies:movie_detail' movie.MID %}" class="text-decoration-none">
+                                                                        {{ movie.primaryTitle }}
+                                                                    </a>
+                                                                </h6>
+                                                                {% if movie.averageRating %}
+                                                                <div class="rating-badge ms-1" style="font-size: 0.7rem;">
+                                                                    ⭐ {{ movie.averageRating|floatformat:1 }}
+                                                                </div>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <small class="text-muted">
+                                                                    {{ movie.startYear|default:"N/A" }}
+                                                                </small>
+                                                                <span class="badge 
+                                                                    {% if movie.role == 'director' %}bg-danger
+                                                                    {% elif movie.role == 'writer' %}bg-warning text-dark
+                                                                    {% elif movie.role == 'actor' %}bg-info
+                                                                    {% else %}bg-secondary{% endif %}" 
+                                                                    style="font-size: 0.65rem;">
+                                                                    {% if movie.role == 'director' %}
+                                                                        <i class="fas fa-video"></i> Réalisateur
+                                                                    {% elif movie.role == 'writer' %}
+                                                                        <i class="fas fa-pen"></i> Scénariste
+                                                                    {% elif movie.role == 'actor' %}
+                                                                        <i class="fas fa-user"></i> Acteur
+                                                                    {% else %}
+                                                                        {{ movie.role }}
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endwith %}
+                                    {% endwith %}
+                                {% endwith %}
+                            {% else %}
+                            <p class="text-muted">Aucun film trouvé pour cette personne.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle"></i> Aucun résultat trouvé pour "{{ results.query }}".
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

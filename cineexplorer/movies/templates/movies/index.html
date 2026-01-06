@@ -1,122 +1,224 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineExplorer - Statistiques</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { color: #333; margin-bottom: 30px; }
-        h2 { color: #555; margin: 20px 0 10px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .card h3 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .stat-row:last-child { border-bottom: none; }
-        .stat-label { font-weight: bold; color: #555; }
-        .stat-value { color: #3498db; }
-        .replica-member { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
-        .replica-member.PRIMARY { background: #d4edda; border-left: 4px solid #28a745; }
-        .replica-member.SECONDARY { background: #d1ecf1; border-left: 4px solid #17a2b8; }
-        .replica-member.UNKNOWN { background: #f8d7da; border-left: 4px solid #dc3545; }
-        .member-name { font-weight: bold; }
-        .member-state { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: white; }
-        .member-state.PRIMARY { background: #28a745; }
-        .member-state.SECONDARY { background: #17a2b8; }
-        .collections { margin-top: 10px; }
-        .collection-item { padding: 5px 0; display: flex; justify-content: space-between; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🎬 CineExplorer - Dashboard</h1>
-        
-        <div class="stats-grid">
-            <!-- SQLite Stats -->
-            <div class="card">
-                <h3>📊 SQLite Statistics</h3>
-                <div class="stat-row">
-                    <span class="stat-label">Films:</span>
-                    <span class="stat-value">{{ sqlite_stats.movie_count }}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Personnes:</span>
-                    <span class="stat-value">{{ sqlite_stats.person_count }}</span>
-                </div>
-                {% if sqlite_stats.rating_stats %}
-                <div class="stat-row">
-                    <span class="stat-label">Ratings:</span>
-                    <span class="stat-value">{{ sqlite_stats.rating_stats.count }}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Rating moyen:</span>
-                    <span class="stat-value">{{ sqlite_stats.rating_stats.avg_rating|floatformat:2 }}</span>
-                </div>
-                {% endif %}
-            </div>
+{% extends 'movies/base.html' %}
 
-            <!-- MongoDB Stats -->
-            <div class="card">
-                <h3>🍃 MongoDB Statistics</h3>
-                <div class="stat-row">
-                    <span class="stat-label">Films:</span>
-                    <span class="stat-value">{{ mongo_stats.movie_count }}</span>
+{% block title %}Accueil - CineExplorer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <section class="mb-5" style="background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: white; padding: 3rem 2rem; border-radius: 8px;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-4 mb-3">Bienvenue sur CineExplorer</h1>
+                <p class="lead mb-4">Explorez une base de données complète de films IMDB avec deux architectures de base de données : SQLite pour les requêtes analytiques et MongoDB pour les données enrichies.</p>
+                <a href="{% url 'movies:movies_list' %}" class="btn btn-warning btn-lg">
+                    <i class="fas fa-play"></i> Découvrir les films
+                </a>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="fas fa-film" style="font-size: 6rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Statistics Section -->
+    <section class="mb-5">
+        <h2 class="mb-4"><i class="fas fa-chart-bar"></i> Statistiques Globales</h2>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-film"></i></div>
+                    <div class="stat-number">{{ sqlite_stats.movie_count|default:"0" }}</div>
+                    <div class="stat-label">Films</div>
                 </div>
-                <div class="stat-row">
-                    <span class="stat-label">Personnes:</span>
-                    <span class="stat-value">{{ mongo_stats.person_count }}</span>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-user"></i></div>
+                    <div class="stat-number">{{ sqlite_stats.actor_count|default:"0" }}</div>
+                    <div class="stat-label">Acteurs</div>
                 </div>
-                <div class="collections">
-                    <h4 style="margin: 10px 0; color: #666;">Collections:</h4>
-                    {% for coll_name, count in mongo_stats.collections.items %}
-                    <div class="collection-item">
-                        <span>{{ coll_name }}</span>
-                        <span style="color: #3498db;">{{ count }}</span>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-video"></i></div>
+                    <div class="stat-number">{{ sqlite_stats.director_count|default:"0" }}</div>
+                    <div class="stat-label">Réalisateurs</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-number">{{ sqlite_stats.rating_stats.avg_rating|default:"0"|floatformat:1 }}/10</div>
+                    <div class="stat-label">Note moyenne</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Quick Search Section -->
+    <section class="mb-5">
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body text-white p-4">
+                <h3 class="mb-3"><i class="fas fa-search"></i> Recherche Rapide</h3>
+                <form action="{% url 'movies:search' %}" method="get" class="row g-3">
+                    <div class="col-md-10">
+                        <input type="text" name="q" class="form-control form-control-lg" 
+                               placeholder="Rechercher un film ou une personne..." required>
                     </div>
-                    {% endfor %}
-                </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-warning btn-lg w-100">
+                            <i class="fas fa-search"></i> Rechercher
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <!-- Replica Set Status -->
-            <div class="card">
-                <h3>🔄 Replica Set Status</h3>
-                {% if replica_status.ok %}
-                <div class="stat-row">
-                    <span class="stat-label">Set Name:</span>
-                    <span class="stat-value">{{ replica_status.set }}</span>
-                </div>
-                <div style="margin-top: 15px;">
-                    <h4 style="margin-bottom: 10px; color: #666;">Membres:</h4>
-                    {% for member in replica_status.members %}
-                    <div class="replica-member {{ member.stateStr }}">
-                        <div class="member-name">{{ member.name }}</div>
-                        <div style="margin-top: 5px;">
-                            <span class="member-state {{ member.stateStr }}">{{ member.stateStr }}</span>
-                            <span style="margin-left: 10px; color: #666;">
-                                Health: {{ member.health }} | Uptime: {{ member.uptime }}s
-                            </span>
+        </div>
+    </section>
+    
+    <!-- Top Rated Movies -->
+    <section class="mb-5">
+        <h2 class="mb-4"><i class="fas fa-trophy"></i> Top 10 Films les mieux notés</h2>
+        <div class="row g-4">
+            {% for movie in top_movies %}
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="card movie-card">
+                    <div class="movie-poster">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="movie-title">{{ movie.primaryTitle }}</h6>
+                        <p class="card-text text-muted small">{{ movie.startYear }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="rating-badge">⭐ {{ movie.averageRating|floatformat:1 }}/10</span>
+                            <small class="text-muted">{{ movie.numVotes }} votes</small>
                         </div>
+                        <a href="{% url 'movies:movie_detail' movie.MID %}" class="btn btn-sm btn-primary mt-3 w-100">
+                            Voir les détails
+                        </a>
                     </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-muted text-center">Aucun film disponible</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <!-- Recent Movies -->
+    <section class="mb-5">
+        <h2 class="mb-4"><i class="fas fa-clock"></i> Films Récents</h2>
+        <div class="row g-4">
+            {% for movie in recent_movies %}
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="card movie-card h-100">
+                    <div class="movie-poster" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="movie-title">{{ movie.primaryTitle }}</h6>
+                        <p class="card-text">
+                            <span class="badge bg-info">{{ movie.startYear }}</span>
+                        </p>
+                        {% if movie.averageRating %}
+                        <div class="mb-2">
+                            <span class="rating-badge">⭐ {{ movie.averageRating|floatformat:1 }}/10</span>
+                        </div>
+                        {% endif %}
+                        <a href="{% url 'movies:movie_detail' movie.MID %}" class="btn btn-sm btn-primary mt-2 w-100">
+                            Voir les détails
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-muted text-center">Aucun film récent disponible</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <!-- Database Status -->
+    <section class="mb-5">
+        <h2 class="mb-4">État des bases de données</h2>
+        <div class="row g-4">
+            <!-- SQLite Status -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-database"></i> SQLite (Analytique)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Films:</strong> {{ sqlite_stats.movie_count }}</p>
+                        <p><strong>Personnes:</strong> {{ sqlite_stats.person_count }}</p>
+                        <p><span class="badge badge-success badge-status">✓ Connectée</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MongoDB Status -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-leaf"></i> MongoDB (Réplica Set)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Films:</strong> {{ mongo_stats.movie_count|default:"N/A" }}</p>
+                        <p><strong>Personnes:</strong> {{ mongo_stats.person_count|default:"N/A" }}</p>
+                        {% if replica_status.ok %}
+                            <p><span class="badge badge-success badge-status">✓ Cluster opérationnel</span></p>
+                        {% else %}
+                            <p><span class="badge badge-danger badge-status">✗ Erreur de connexion</span></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Replica Set Status Details -->
+    {% if replica_status.ok %}
+    <section class="mb-5">
+        <h2 class="mb-4">État du Replica Set MongoDB</h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nœud</th>
+                        <th>Rôle</th>
+                        <th>État</th>
+                        <th>Health</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in replica_status.members %}
+                    <tr>
+                        <td>{{ member.name }}</td>
+                        <td>
+                            {% if member.stateStr == "PRIMARY" %}
+                                <span class="badge bg-danger">PRIMARY</span>
+                            {% elif member.stateStr == "SECONDARY" %}
+                                <span class="badge bg-success">SECONDARY</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ member.stateStr }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ member.stateStr }}</td>
+                        <td>
+                            {% if member.health == 1 %}
+                                <i class="fas fa-check text-success"></i> Healthy
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> Down
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
-                </div>
-                {% else %}
-                <div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px;">
-                    ❌ Erreur: {{ replica_status.error }}
-                </div>
-                {% endif %}
-            </div>
+                </tbody>
+            </table>
         </div>
-
-        <div class="card">
-            <h3>🔍 Actions</h3>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <a href="/search/?q=star&source=sqlite" style="padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 4px;">Test SQLite Search</a>
-                <a href="/search/?q=star&source=mongo" style="padding: 10px 20px; background: #27ae60; color: white; text-decoration: none; border-radius: 4px;">Test MongoDB Search</a>
-                <a href="/replica-status/" style="padding: 10px 20px; background: #e67e22; color: white; text-decoration: none; border-radius: 4px;">Replica Status JSON</a>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
