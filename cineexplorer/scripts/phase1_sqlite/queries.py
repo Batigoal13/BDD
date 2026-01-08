@@ -1,5 +1,4 @@
 import sqlite3
-import pandas as pd
 from typing import List, Tuple, Any
 
 def query_actor_filmography(conn: sqlite3.Connection, actor_name: str) -> List[Tuple]:

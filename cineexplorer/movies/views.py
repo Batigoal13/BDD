@@ -68,6 +68,12 @@ def movies_list(request):
     # Pagination (20 films par page)
     paginator = Paginator(all_movies, 20)
     movies = paginator.get_page(page)
+
+    # Construire la querystring sans le paramètre de page pour la pagination
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        query_params.pop('page')
+    querystring = query_params.urlencode()
     
     # Récupérer les genres disponibles
     genres = sqlite_service.get_all_genres()
@@ -82,6 +88,7 @@ def movies_list(request):
         'current_sort': sort_by,
         'view_type': view_type,
         'total_count': paginator.count,
+        'querystring': querystring,
     }
     return render(request, 'movies/movies_list.html', context)
 
